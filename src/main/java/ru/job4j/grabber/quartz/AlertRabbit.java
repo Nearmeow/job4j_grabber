@@ -16,8 +16,7 @@ import static org.quartz.SimpleScheduleBuilder.*;
 public class AlertRabbit {
     public static void main(String[] args) {
         try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream("src/main/resources/rabbit.properties"));
+            Properties properties = readProperties();
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.start();
             JobDetail job = newJob(Rabbit.class).build();
@@ -39,5 +38,11 @@ public class AlertRabbit {
         public void execute(JobExecutionContext context) throws JobExecutionException {
             System.out.println("Rabbit runs here ...");
         }
+    }
+
+    private static Properties readProperties() throws IOException {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src/main/resources/rabbit.properties"));
+        return properties;
     }
 }
