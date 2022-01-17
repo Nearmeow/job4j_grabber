@@ -28,7 +28,7 @@ public class AlertRabbit {
                     .withSchedule(times)
                     .build();
             scheduler.scheduleJob(job, trigger);
-        } catch (SchedulerException | IOException se) {
+        } catch (SchedulerException se) {
             se.printStackTrace();
         }
     }
@@ -40,9 +40,13 @@ public class AlertRabbit {
         }
     }
 
-    private static Properties readProperties() throws IOException {
+    private static Properties readProperties() {
         Properties properties = new Properties();
-        properties.load(new FileInputStream("src/main/resources/rabbit.properties"));
+        try (FileInputStream fis = new FileInputStream("src/main/resources/rabbit.properties")) {
+            properties.load(fis);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return properties;
     }
 }
