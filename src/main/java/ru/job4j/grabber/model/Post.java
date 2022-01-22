@@ -63,13 +63,10 @@ public class Post {
 
     @Override
     public String toString() {
-        return "Post{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", link='" + link + '\'' +
-                ", description='" + description + '\'' +
-                ", created=" + created +
-                '}';
+        return "Post{"
+                + "id=" + id + ", title='" + title + '\''
+                + ", link='" + link + '\'' + ", description='" + description + '\''
+                + ", created=" + created + '}';
     }
 
     @Override
@@ -81,10 +78,10 @@ public class Post {
             return false;
         }
         Post post = (Post) o;
-        return id == post.id &&
-                Objects.equals(title, post.title) &&
-                Objects.equals(link, post.link) &&
-                Objects.equals(description, post.description);
+        return id == post.id
+                && Objects.equals(title, post.title)
+                && Objects.equals(link, post.link)
+                && Objects.equals(description, post.description);
     }
 
     @Override
