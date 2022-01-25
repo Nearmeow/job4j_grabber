@@ -27,13 +27,19 @@ public class SqlRuParse implements Parse {
     public List<Post> list(String link) {
         List<Post> posts = new ArrayList<>();
         try {
-            Document doc = Jsoup.connect(link).get();
-            Elements row = doc.select(".postslisttopic");
-            for (Element td : row) {
-                Element href = td.child(0);
-                Post post = detail(href.attr("href"));
-                post.setTitle(href.text());
-                posts.add(post);
+            for (int i = 1; i < 6; i++) {
+                Document doc = Jsoup.connect(link + i).get();
+                Elements row = doc.select(".postslisttopic");
+                for (Element td : row) {
+                    Element href = td.child(0);
+                    String title = href.text();
+                    if (title.toLowerCase().contains("java") && !title.toLowerCase().contains("javascript")) {
+                        Post post = detail(href.attr("href"));
+                        post.setTitle(href.text());
+                        posts.add(post);
+                    }
+                }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
