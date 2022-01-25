@@ -4,6 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import ru.job4j.grabber.Parse;
 import ru.job4j.grabber.model.Post;
 import ru.job4j.grabber.utils.DateTimeParser;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
@@ -11,8 +12,10 @@ import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SqlRuParse {
+public class SqlRuParse implements Parse {
 
     private final DateTimeParser dateTimeParser;
 
@@ -20,25 +23,35 @@ public class SqlRuParse {
         this.dateTimeParser = dateTimeParser;
     }
 
-    public static void main(String[] args) throws Exception {
-        for (int i = 1; i < 6; i++) {
-            Document doc = Jsoup.connect("https://www.sql.ru/forum/job-offers/" + i).get();
+    @Override
+    public List<Post> list(String link) {
+        List<Post> posts = new ArrayList<>();
+        try {
+            Document doc = Jsoup.connect(link).get();
             Elements row = doc.select(".postslisttopic");
             for (Element td : row) {
-                Element parent = td.parent();
                 Element href = td.child(0);
-                System.out.println(parent.child(5).text());
-                System.out.println(href.attr("href"));
-                System.out.println(href.text());
+                Post post = detail(href.attr("href"));
+                post.setTitle(href.text());
+                posts.add(post);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return posts;
     }
 
-    public Post getPostFromLink(String link) throws IOException, ParseException {
-        Document doc = Jsoup.connect(link).get();
+    @Override
+    public Post detail(String link) {
         Post post = new Post();
-        post.setDescription(getDescriptionFromDoc(doc));
-        post.setCreated(getCreatedFromDoc(doc));
+        try {
+            Document doc = Jsoup.connect(link).get();
+            post.setDescription(getDescriptionFromDoc(doc));
+            post.setCreated(getCreatedFromDoc(doc));
+            post.setLink(link);
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
         return post;
     }
 
