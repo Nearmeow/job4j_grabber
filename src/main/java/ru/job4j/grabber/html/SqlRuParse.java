@@ -35,7 +35,7 @@ public class SqlRuParse implements Parse {
                     String title = href.text();
                     if (title.toLowerCase().contains("java") && !title.toLowerCase().contains("javascript")) {
                         Post post = detail(href.attr("href"));
-                        post.setTitle(href.text());
+                        post.setTitle(title);
                         posts.add(post);
                     }
                 }
