@@ -1,40 +1,80 @@
 package ru.job4j.grabber;
 
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
+import ru.job4j.grabber.html.Parse;
 import ru.job4j.grabber.html.SqlRuParse;
 import ru.job4j.grabber.model.Post;
+import ru.job4j.grabber.store.PsqlStore;
+import ru.job4j.grabber.store.Store;
 import ru.job4j.grabber.utils.SqlRuDateTimeParser;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 
-public class Grabber {
-    public static void main(String[] args) {
-        SqlRuParse sqlRuParse = new SqlRuParse(new SqlRuDateTimeParser());
-        List<Post> posts = sqlRuParse.list("https://www.sql.ru/forum/job-offers/");
-        Properties properties = readProperties();
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
 
-        try (PsqlStore store = new PsqlStore(properties)) {
-            for (Post post : posts) {
-                store.save(post);
-            }
-            List<Post> postList = store.getAll();
-            postList.forEach(System.out::println);
-            System.out.println("***************");
-            System.out.println(store.findById(130));
-        } catch (Exception e) {
-            e.printStackTrace();
+public class Grabber implements Grab {
+    private final Properties cfg = new Properties();
+
+    public Store store() throws SQLException {
+        return new PsqlStore(cfg);
+    }
+
+    public Scheduler scheduler() throws SchedulerException {
+        Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
+        scheduler.start();
+        return scheduler;
+    }
+
+    public void cfg() throws IOException {
+        try (InputStream in = new FileInputStream(new File("src/main/resources/app.properties"))) {
+            cfg.load(in);
         }
     }
 
-    private static Properties readProperties() {
-        Properties properties = new Properties();
-        try (FileInputStream fis = new FileInputStream("src/main/resources/rabbit.properties")) {
-            properties.load(fis);
-        } catch (IOException e) {
-            e.printStackTrace();
+    @Override
+    public void init(Parse parse, Store store, Scheduler scheduler) throws SchedulerException {
+        JobDataMap data = new JobDataMap();
+        data.put("store", store);
+        data.put("parse", parse);
+        JobDetail job = newJob(GrabJob.class)
+                .usingJobData(data)
+                .build();
+        SimpleScheduleBuilder times = simpleSchedule()
+                .withIntervalInSeconds(Integer.parseInt(cfg.getProperty("time")))
+                .repeatForever();
+        Trigger trigger = newTrigger()
+                .startNow()
+                .withSchedule(times)
+                .build();
+        scheduler.scheduleJob(job, trigger);
+    }
+
+    public static class GrabJob implements Job {
+
+        @Override
+        public void execute(JobExecutionContext context) throws JobExecutionException {
+            JobDataMap map = context.getJobDetail().getJobDataMap();
+            Store store = (Store) map.get("store");
+            Parse parse = (Parse) map.get("parse");
+            List<Post> parsedPosts = parse.list("https://www.sql.ru/forum/job-offers/");
+            parsedPosts.forEach(store::save);
         }
-        return properties;
+    }
+
+    public static void main(String[] args) throws Exception {
+        Grabber grab = new Grabber();
+        grab.cfg();
+        Scheduler scheduler = grab.scheduler();
+        Store store = grab.store();
+        grab.init(new SqlRuParse(new SqlRuDateTimeParser()), store, scheduler);
     }
 }

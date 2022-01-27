@@ -1,6 +1,8 @@
-package ru.job4j.grabber;
+package ru.job4j.grabber.store;
 
 import ru.job4j.grabber.model.Post;
+import ru.job4j.grabber.store.Store;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,7 @@ public class PsqlStore implements Store, AutoCloseable {
     @Override
     public void save(Post post) {
         try (PreparedStatement statement = cnn.prepareStatement(
-                "insert into post (name, text, link, created_date) values (?, ?, ?, ?)")
+                "insert into post (name, text, link, created_date) values (?, ?, ?, ?) on conflict do nothing")
         ) {
             statement.setString(1, post.getTitle());
             statement.setString(2, post.getDescription());
